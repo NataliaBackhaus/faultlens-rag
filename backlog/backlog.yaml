@@ -1,0 +1,784 @@
+# FaultLens RAG initial product backlog. Source doc: "Inverter Troubleshooting RAG: Free Stack and Scrum Backlog"
+# https://claude.ai/code/artifact/aff8ca61-6bb6-41fc-b59a-6a261c2d4be7
+# Import once with the backlog-import skill; after that, Vikunja is the source of truth.
+
+# Each story may carry `study`: what to learn before or while doing it, and where.
+
+epics:
+  E1: Foundation
+  E2: Corpus
+  E3: Parsing
+  E4: Error-code tables
+  E5: Metadata
+  E6: Figures
+  E7: Chunking and index
+  E8: Retrieval
+  E9: Answer generation
+  E10: Evaluation
+  E11: App
+  E12: Observability
+  E13: Portfolio
+  E14: Stretch
+  E15: v2 Heat pumps
+sprint_goals:
+  0: Repo, local models, CI and the manual list
+  1: One manual answers end to end; all manuals parsed
+  2: Error-code rows with model and firmware metadata
+  3: Figures described, chunks ready, 30 eval questions
+  4: Model-filtered index with baseline recall
+  5: Hybrid search, rerank, cited answers, abstain
+  6: Full eval set, answer metrics and the API
+  7: UI, tracing, ablation report and eval in CI (v1.0 gate)
+  8: README, demo video, write-up; stretch ColQwen2
+  9: Heat pump manuals ingested with the new schema
+  10: Device routing, heat pump eval, v2 release (v2.0 gate)
+stories:
+- id: '1.1'
+  title: Repo and tooling
+  epic: E1
+  points: 2
+  sprint: 0
+  story: As the developer, I want a clean Python project skeleton, so that every later story starts from the same setup.
+  done_when: make test and make lint pass on a fresh clone.
+  tasks:
+  - Create the public GitHub repo with an MIT licence and a .gitignore that excludes data/ and .env
+  - Set up Python 3.11 with uv, ruff, pytest and pre-commit
+  - Add a Makefile with setup, lint, test, ingest, serve, eval targets
+  - 'Lay out folders: ingest/, retrieval/, generation/, api/, ui/, eval/, docs/'
+  - Start docs/sprint-log.md
+  study:
+  - topic: 'Modern Python project tooling: virtual envs, lockfiles, linting, test discovery'
+    sources:
+    - 'uv docs: https://docs.astral.sh/uv/'
+    - 'Ruff docs: https://docs.astral.sh/ruff/'
+    - 'pytest docs: https://docs.pytest.org/'
+- id: '1.2'
+  title: Local model runtime
+  epic: E1
+  points: 2
+  sprint: 0
+  story: As the developer, I want the open models running locally, so that nothing in the build needs a paid API.
+  done_when: A smoke script gets a text answer and an image description from Ollama, and logs tokens per second.
+  tasks:
+  - Install Ollama and pull Qwen2.5-VL 7B and Qwen2.5 3B (3B VL variant if hardware is short)
+  - Write scripts/smoke_models.py that sends one text prompt and one manual page image
+  - Record hardware and measured speed in the README, to decide local versus notebook ingestion
+  - Set up a Kaggle notebook template that installs Ollama, as the fallback
+  study:
+  - topic: 'How local LLM serving works: model files, quantisation, context length, the Ollama REST API'
+    sources:
+    - 'Ollama API reference: https://github.com/ollama/ollama/blob/main/docs/api.md'
+    - 'Qwen2.5-VL repo and model notes: https://github.com/QwenLM/Qwen2.5-VL'
+  - topic: 'Free GPU notebooks: sessions, quotas, saving outputs'
+    sources:
+    - 'Kaggle Notebooks docs: https://www.kaggle.com/docs/notebooks'
+- id: '1.3'
+  title: Continuous integration
+  epic: E1
+  points: 2
+  sprint: 0
+  story: As the developer, I want CI on every push, so that broken code never reaches main.
+  done_when: A GitHub Actions run on a pull request shows lint and unit tests passing.
+  tasks:
+  - Add a workflow for lint and unit tests on push and pull request
+  - Mock model calls in unit tests so CI needs no models or keys
+  - Add a status badge to the README
+  study:
+  - topic: 'CI basics: workflows, jobs, caching dependencies, mocking external calls in tests'
+    sources:
+    - 'GitHub Actions, building and testing Python: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python'
+- id: '1.4'
+  title: One model client for every model
+  epic: E1
+  points: 3
+  sprint: 0
+  story: As the developer, I want one interface over Ollama and the optional free APIs, so that switching model is a config change.
+  done_when: The same call works against Ollama by default, and against Gemini or Groq when a key is set.
+  tasks:
+  - Define LLMClient with generate(text, images=None, json_schema=None)
+  - Implement the Ollama backend, then optional Gemini and Groq backends
+  - Cache every response on disk keyed by a hash of model, prompt and image
+  - Retry with backoff on timeouts and rate-limit errors
+  - Read model names from config.yaml, keys from .env; add .env.example
+  study:
+  - topic: Adapter pattern for model providers, response caching, retries with exponential backoff
+    sources:
+    - 'Tenacity (retry library) docs: https://tenacity.readthedocs.io/'
+    - 'Python hashlib for cache keys: https://docs.python.org/3/library/hashlib.html'
+- id: '2.1'
+  title: Manual registry and download script
+  epic: E2
+  points: 3
+  sprint: 0
+  story: As the developer, I want a manifest of every manual and a script that fetches them, so that anyone can rebuild the corpus without me sharing copyrighted PDFs.
+  done_when: make download fetches every manual listed, skips unchanged files, and the PDFs stay out of git.
+  tasks:
+  - 'Create corpus/manifest.yaml from thread 3''s list: manufacturer, title, document type, revision date, source URL'
+  - Write the download script with a SHA-256 content hash per file
+  - Store each hash in the manifest so re-runs skip unchanged files
+  - Note in the README that manuals belong to their manufacturers and are not redistributed
+  study:
+  - topic: 'Reproducible data pipelines: manifests, content hashing, idempotent downloads'
+    sources:
+    - 'Python hashlib: https://docs.python.org/3/library/hashlib.html'
+- id: '3.1'
+  title: Walking skeleton on one manual
+  epic: E3
+  points: 3
+  sprint: 1
+  story: As the developer, I want one ugly end-to-end path on one manual in week two, so that I find integration problems before polishing any stage.
+  done_when: A notebook answers one real error-code question for one Fronius manual and prints the page number.
+  tasks:
+  - Extract text per page with PyMuPDF, split by page
+  - Embed with FastEmbed and search in an in-memory Qdrant
+  - Answer with Qwen2.5 via the model client, citing the page
+  - Write down what broke; it shapes the next stories
+  study:
+  - topic: What RAG is and why it beats fine-tuning for manuals; the end-to-end loop
+    sources:
+    - Primer topic 1 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Lewis et al. 2020, the original RAG paper: https://arxiv.org/abs/2005.11401'
+    - 'Qdrant quickstart: https://qdrant.tech/documentation/quickstart/'
+  - topic: 'Domain basics: what an inverter does and why it raises error codes'
+    sources:
+    - 'Solar inverter overview: https://en.wikipedia.org/wiki/Solar_inverter'
+    - Read the troubleshooting chapter of one SMA and one Fronius manual end to end
+- id: '3.2'
+  title: Page rendering
+  epic: E3
+  points: 2
+  sprint: 1
+  story: As an installer, I want to see the actual manual page, so that I can trust the answer and read the diagram myself.
+  done_when: Every page of every manual has a PNG at 150 to 200 DPI, addressed by doc_id and page number.
+  tasks:
+  - Render pages with PyMuPDF to data/pages/{doc_id}/{page}.png
+  - Skip pages already rendered for the same file hash
+  - Unit test page count against the PDF
+  study:
+  - topic: 'PDF internals: pages, text layers, images, rendering resolution (DPI)'
+    sources:
+    - 'PyMuPDF docs: https://pymupdf.readthedocs.io/'
+- id: '3.3'
+  title: Layout parsing with Docling
+  epic: E3
+  points: 5
+  sprint: 1
+  story: As the developer, I want text blocks, headings, tables and figures with page and bounding box, so that every later record can cite its exact place.
+  done_when: Each manual has a cached JSON of typed elements with page, bbox and section path.
+  tasks:
+  - Run Docling per manual and save its document JSON keyed by file hash
+  - 'Map Docling output to one internal Element model: type, text, page, bbox, section_path'
+  - Time the run on CPU and move it to the notebook if it is too slow
+  - Unit test on two manuals with known heading and table counts
+  study:
+  - topic: 'Layout-aware document parsing: reading order, element types, bounding boxes'
+    sources:
+    - Primer topic 2 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Docling docs: https://docling-project.github.io/docling/'
+    - 'Docling technical report: https://arxiv.org/abs/2408.09869'
+- id: '3.4'
+  title: Region classification
+  epic: E3
+  points: 3
+  sprint: 1
+  story: As the developer, I want each element tagged as prose, table, figure or safety warning, so that each one takes the right path next.
+  done_when: Tags on 50 hand-checked elements are at least 90% correct.
+  tasks:
+  - Start from Docling labels; add rules for safety blocks (DANGER, WARNING, CAUTION) and LED charts
+  - Label 50 elements by hand as a small test set
+  - Report accuracy in the sprint log
+  study:
+  - topic: 'Document layout analysis: the classes a page is split into and how models learn them'
+    sources:
+    - 'DocLayNet paper (the dataset behind many layout models): https://arxiv.org/abs/2206.01062'
+- id: '3.5'
+  title: Ingestion quality gate
+  epic: E3
+  points: 2
+  sprint: 2
+  story: As the developer, I want a report of pages and tables that parsed badly, so that bad data never reaches the index silently.
+  done_when: make ingest writes reports/ingest_quality.md listing flagged pages, tables and documents.
+  tasks:
+  - Flag pages with almost no text (likely scanned, needing OCR)
+  - Flag tables with many empty cells and documents with no model metadata
+  - Turn on Docling OCR for flagged pages only
+  study:
+  - topic: OCR basics and when a PDF page needs it; data quality checks before indexing
+    sources:
+    - 'Tesseract OCR docs: https://tesseract-ocr.github.io/'
+    - 'Docling docs, OCR options: https://docling-project.github.io/docling/'
+- id: '4.1'
+  title: Error-code rows as records
+  epic: E4
+  points: 5
+  sprint: 2
+  story: As an installer, I want to type an error code and get the exact row for it, so that I see the message, cause and remedy without scrolling a 200-page manual.
+  done_when: Every error-code table becomes rows with code, message, cause, remedy, applicable models and page, and 30 hand-checked rows match the PDF.
+  tasks:
+  - Detect error-code tables by header words (code, event, state, message, cause, remedy, measure)
+  - Map each manufacturer's columns to the common schema
+  - Join tables that continue across pages; split merged cells
+  - Keep the whole table as a record too, for context
+  - Write golden tests from 30 hand-checked rows across SMA and Fronius
+  study:
+  - topic: 'Table structure recognition: rows, columns, spanning cells, multi-page tables'
+    sources:
+    - 'TableFormer paper (used inside Docling): https://arxiv.org/abs/2203.01017'
+    - 'Docling docs, table export: https://docling-project.github.io/docling/'
+  - topic: Why a table row is the best retrieval unit for error-code questions
+    sources:
+    - Primer topic 3 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '5.1'
+  title: Device metadata extraction
+  epic: E5
+  points: 3
+  sprint: 2
+  story: As an installer, I want answers only from my inverter's manual, so that I never follow a fix meant for another model.
+  done_when: Every document has manufacturer, product family, model list, firmware range and revision, and every record inherits them.
+  tasks:
+  - Regex for model strings on the title page, headers and "applies to" lists
+  - Fill gaps with Qwen2.5 3B using a strict JSON schema
+  - Let table rows narrow the model list when a row names specific models
+  - Log which method set each field, for tracing errors
+  study:
+  - topic: Metadata extraction with regex plus an LLM forced into a JSON schema
+    sources:
+    - Primer topic 6 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Ollama structured outputs: https://ollama.com/blog/structured-outputs'
+    - 'Pydantic models and validation: https://docs.pydantic.dev/latest/'
+    - 'Python regex HOWTO: https://docs.python.org/3/howto/regex.html'
+- id: '5.2'
+  title: Model aliases and firmware ranges
+  epic: E5
+  points: 3
+  sprint: 2
+  story: As an installer, I want to type the model the way I say it, so that "SB 5.0" and "Sunny Boy 5.0" find the same manual.
+  done_when: An alias table resolves every model string in the eval questions, and firmware versions compare correctly.
+  tasks:
+  - Build corpus/aliases.yaml from the manuals' model lists
+  - Normalise case, spaces, hyphens and common abbreviations
+  - Parse firmware versions into comparable tuples and ranges
+  - Unit tests for aliases and version comparisons
+  study:
+  - topic: Entity normalisation (aliases) and comparing version strings
+    sources:
+    - 'packaging.version for version parsing: https://packaging.pypa.io/en/stable/version.html'
+    - 'Python regex HOWTO: https://docs.python.org/3/howto/regex.html'
+- id: '6.1'
+  title: Figure crops
+  epic: E6
+  points: 2
+  sprint: 3
+  story: As an installer, I want wiring diagrams and LED charts shown next to the answer, so that I can check terminals and lights myself.
+  done_when: Every figure has a PNG crop with its page, bbox, caption and nearest heading.
+  tasks:
+  - Crop figures from the page renders using Docling bboxes, with a small margin
+  - Attach caption and section heading as context
+  - Drop logos and decorative images with a size and position rule
+  study:
+  - topic: Image cropping and coordinate systems (PDF points versus pixels)
+    sources:
+    - 'Pillow docs: https://pillow.readthedocs.io/'
+    - 'PyMuPDF docs, coordinates: https://pymupdf.readthedocs.io/'
+- id: '6.2'
+  title: VLM figure descriptions
+  epic: E6
+  points: 5
+  sprint: 3
+  story: As an installer, I want a question about a diagram to find that diagram, so that answers hidden in schematics are not lost.
+  done_when: Every figure has a stored description, and 20 hand-checked descriptions name the right labels, terminals and LED states.
+  tasks:
+  - 'Write a fixed prompt: what the figure shows, every label and terminal, any codes or LED states, and what a technician would use it for'
+  - Run Qwen2.5-VL 7B in batch; resume from the last finished figure after any crash
+  - Cache by image hash so reruns are free
+  - If the laptop is too slow, run the same script in the Kaggle notebook and download the results
+  - Score 20 descriptions by hand and log the result
+  study:
+  - topic: 'Vision-language models: how they read images, their limits on small text, prompting for exhaustive descriptions'
+    sources:
+    - Primer topic 8 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Hugging Face, Vision Language Models Explained: https://huggingface.co/blog/vlms'
+    - 'Qwen2.5-VL technical report: https://arxiv.org/abs/2502.13923'
+  - topic: 'Multimodal RAG options: caption then embed, multimodal embeddings, late interaction'
+    sources:
+    - Primer topic 9 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '7.1'
+  title: Structure-aware chunking
+  epic: E7
+  points: 3
+  sprint: 3
+  story: As the developer, I want prose split by section with page and bbox kept, so that every chunk is a coherent unit that cites one place.
+  done_when: Chunks never cross a section boundary, stay under the embedding model's limit, and carry doc_id, page, bbox, section_path and device metadata.
+  tasks:
+  - Split by heading, then by paragraph if a section is too long, with a small overlap
+  - Keep safety warnings attached to the step they belong to
+  - Define one Record type shared by prose chunks, table rows, whole tables and figure descriptions
+  - Unit tests on chunk boundaries
+  study:
+  - topic: 'Chunking strategies: fixed size, recursive, structure-aware; overlap; chunk size versus recall'
+    sources:
+    - Primer topic 3 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Pinecone, Chunking Strategies for LLM Applications: https://www.pinecone.io/learn/chunking-strategies/'
+    - 'Docling chunking concepts: https://docling-project.github.io/docling/concepts/chunking/'
+- id: '10.1'
+  title: Seed eval set
+  epic: E10
+  points: 2
+  sprint: 3
+  story: As the developer, I want 30 questions with gold answers early, so that retrieval work from Sprint 4 on is measured, not guessed.
+  done_when: eval/questions.jsonl holds 30 questions, each with model, gold [doc, page], gold answer and a type tag.
+  tasks:
+  - Take the first 30 questions from thread 3, mixing code lookups, figure questions and wrong-model traps
+  - Add 5 unanswerable questions
+  - Validate the file with a schema check in CI
+  study:
+  - topic: 'Designing a RAG eval set: question types, gold answers, traps, unanswerable cases'
+    sources:
+    - Primer topic 13 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Ragas docs: https://docs.ragas.io/'
+- id: '7.2'
+  title: Hybrid Qdrant index
+  epic: E7
+  points: 5
+  sprint: 4
+  story: As the developer, I want dense and BM25 vectors with filterable metadata in one collection, so that retrieval can filter, then search both ways at once.
+  done_when: make index builds the collection from scratch, and a filtered query returns only records for that model.
+  tasks:
+  - Run Qdrant in Docker with a volume; add it to docker-compose.yml
+  - Embed records with bge-base-en-v1.5 and BM25 via FastEmbed
+  - Create named dense and sparse vectors in one collection
+  - Add payload indexes on manufacturer, model, firmware, record type and error code
+  - Save a snapshot so the demo can start without re-indexing
+  study:
+  - topic: Dense embeddings and cosine similarity; how to pick a model
+    sources:
+    - Primer topic 4 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Sentence Transformers docs: https://sbert.net/'
+    - 'MTEB leaderboard: https://huggingface.co/spaces/mteb/leaderboard'
+    - 'FastEmbed docs: https://qdrant.github.io/fastembed/'
+  - topic: Sparse retrieval with BM25 and why exact codes need it
+    sources:
+    - Primer topic 5 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Okapi BM25: https://en.wikipedia.org/wiki/Okapi_BM25'
+  - topic: 'Vector database concepts: collections, named vectors, payload indexes, snapshots'
+    sources:
+    - 'Qdrant indexing: https://qdrant.tech/documentation/concepts/indexing/'
+    - 'Qdrant snapshots: https://qdrant.tech/documentation/concepts/snapshots/'
+- id: '8.1'
+  title: Query understanding
+  epic: E8
+  points: 3
+  sprint: 4
+  story: As an installer, I want to type a question the way I would say it on site, so that I don't have to fill in a form.
+  done_when: On the eval questions, the error code and model are extracted correctly at least 95% of the time, and a missing model triggers a follow-up question.
+  tasks:
+  - Regex for error codes per manufacturer pattern, and for model strings via the alias table
+  - Qwen2.5 3B with a JSON schema for what the regex misses
+  - Return a clarifying question when the model is missing or ambiguous
+  - Unit tests on 30 phrasings
+  study:
+  - topic: 'Query understanding: entity extraction, slot filling, asking clarifying questions'
+    sources:
+    - Primer topic 10 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Ollama structured outputs: https://ollama.com/blog/structured-outputs'
+- id: '8.2'
+  title: Model pre-filter and exact code match
+  epic: E8
+  points: 3
+  sprint: 4
+  story: As an installer, I want results only for my model and firmware, with the exact code row first, so that the top answer is the right one.
+  done_when: No eval query returns a record for a different model, and an exact code row is ranked first whenever it exists.
+  tasks:
+  - Build the Qdrant filter from model, firmware range and manufacturer
+  - Look up exact code rows by payload match before vector search
+  - Fall back to manufacturer-level documents when a model has no specific manual, and say so
+  study:
+  - topic: 'Metadata filtering: pre-filtering versus post-filtering and why it matters for rare models'
+    sources:
+    - Primer topic 6 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Qdrant, A Complete Guide to Filtering in Vector Search: https://qdrant.tech/articles/vector-search-filtering/'
+    - 'Qdrant filtering docs: https://qdrant.tech/documentation/concepts/filtering/'
+- id: '10.2'
+  title: Retrieval metrics
+  epic: E10
+  points: 2
+  sprint: 4
+  story: As the developer, I want recall@k, MRR and a wrong-model rate from one command, so that every retrieval change shows its effect.
+  done_when: make eval-retrieval prints the metrics and appends them to eval/history.csv.
+  tasks:
+  - Compute recall@5, recall@10 and MRR against the gold pages
+  - Count results from a model other than the one asked about
+  - Append each run with the git commit and config
+  study:
+  - topic: 'Retrieval metrics: recall@k, precision@k, MRR, nDCG, and what each tells you'
+    sources:
+    - Primer topic 13 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Evaluation measures in information retrieval: https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)'
+- id: '8.3'
+  title: Hybrid search with rank fusion
+  epic: E8
+  points: 3
+  sprint: 5
+  story: As the developer, I want dense and BM25 results fused, so that both exact part numbers and paraphrased symptoms are found.
+  done_when: Hybrid recall@10 on the eval set is at least as good as the better of dense-only and BM25-only.
+  tasks:
+  - Use Qdrant's query API with prefetch on both vectors and reciprocal rank fusion
+  - Tune top-k per stage on the eval set
+  - Log per-stage results for the ablation report
+  study:
+  - topic: Hybrid search and Reciprocal Rank Fusion
+    sources:
+    - Primer topic 5 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Cormack et al. 2009, the RRF paper: https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf'
+    - 'Qdrant hybrid queries: https://qdrant.tech/documentation/concepts/hybrid-queries/'
+- id: '8.4'
+  title: Reranking
+  epic: E8
+  points: 2
+  sprint: 5
+  story: As the developer, I want a cross-encoder to reorder the top candidates, so that the best five passages reach the answer model.
+  done_when: Reranking improves MRR on the eval set, and its CPU latency is measured and logged.
+  tasks:
+  - Rerank the top 30 with bge-reranker-base via FastEmbed
+  - Measure latency per query on the laptop
+  study:
+  - topic: Bi-encoders versus cross-encoders, and the retrieve-then-rerank pattern
+    sources:
+    - Primer topic 7 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Sentence Transformers, Cross-Encoders: https://sbert.net/examples/cross_encoder/applications/README.html'
+    - 'bge-reranker-base model card: https://huggingface.co/BAAI/bge-reranker-base'
+- id: '9.1'
+  title: Grounded answer with page citations
+  epic: E9
+  points: 5
+  sprint: 5
+  story: As an installer, I want a short diagnosis, likely causes, steps to fix and the manual page, so that I can act and check the source.
+  done_when: Answers follow a fixed structure, every claim carries a [doc, page] citation, and safety warnings from the source appear first.
+  tasks:
+  - 'Write the grounded prompt: use only the given passages, cite each claim, never invent a code'
+  - Pass page images of figure hits to Qwen2.5-VL 7B along with the text
+  - 'Return structured output: diagnosis, causes, steps, safety, citations'
+  - Snapshot tests on 10 fixed questions
+  study:
+  - topic: 'Grounded generation and citations: prompt structure, passage ordering, structured output'
+    sources:
+    - Primer topic 11 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Prompt Engineering Guide: https://www.promptingguide.ai/'
+    - 'Lost in the Middle (position of passages matters): https://arxiv.org/abs/2307.03172'
+- id: '9.2'
+  title: Citation check and abstain
+  epic: E9
+  points: 3
+  sprint: 5
+  story: As an installer, I want the assistant to say "not in the manual" instead of guessing, so that I never act on an invented fix.
+  done_when: On unanswerable eval questions the assistant abstains at least 80% of the time, and every citation it returns points at a retrieved record.
+  tasks:
+  - Check that each cited [doc, page] was in the retrieved set; drop or flag the rest
+  - Abstain when the top rerank score is under a threshold tuned on the eval set
+  - Abstain when the code exists but only for a different model, and say which model it belongs to
+  study:
+  - topic: Hallucination in RAG, citation verification and when a model should abstain
+    sources:
+    - Primer topic 12 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Self-RAG paper (retrieval with self-critique): https://arxiv.org/abs/2310.11511'
+- id: '9.3'
+  title: Show the cited page
+  epic: E9
+  points: 2
+  sprint: 6
+  story: As an installer, I want to tap a citation and see the page with the region highlighted, so that I can check it in seconds.
+  done_when: Each citation links to the page PNG with its bbox drawn.
+  tasks:
+  - Serve page images by doc_id and page
+  - Draw the bbox of the cited record on the image
+  - Show figure crops inline under the answer
+  study:
+  - topic: Drawing on images and serving static files from an API
+    sources:
+    - 'Pillow ImageDraw: https://pillow.readthedocs.io/'
+    - 'FastAPI tutorial: https://fastapi.tiangolo.com/tutorial/'
+- id: '10.3'
+  title: Full eval set
+  epic: E10
+  points: 3
+  sprint: 6
+  story: As a hiring manager reading the README, I want results on a set large enough to mean something, so that I believe the numbers.
+  done_when: About 100 questions cover every manual, with at least 15 figure questions, 15 wrong-model traps and 10 unanswerable ones.
+  tasks:
+  - Extend the seed set with thread 3's full list
+  - Have a second person or a fresh read-through check 20 gold answers
+  - Freeze a version tag so results stay comparable
+  study:
+  - topic: Test set coverage and avoiding leakage between tuning and reporting
+    sources:
+    - 'Ragas docs: https://docs.ragas.io/'
+- id: '10.4'
+  title: Answer metrics
+  epic: E10
+  points: 3
+  sprint: 6
+  story: As the developer, I want correctness, citation accuracy, faithfulness and abstain rate, so that I can show the answers are right, not just retrieved.
+  done_when: make eval reports the four metrics, and a hand check of 20 judge verdicts agrees at least 80% of the time.
+  tasks:
+  - 'Citation accuracy: share of answers citing a gold page'
+  - Correctness and faithfulness with Ragas and a local judge model
+  - Abstain precision and recall on the unanswerable questions
+  - Hand-check 20 judge verdicts and log agreement
+  study:
+  - topic: 'Answer metrics: correctness, faithfulness, context precision; LLM-as-a-judge and its biases'
+    sources:
+    - Primer topic 13 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'Ragas metrics: https://docs.ragas.io/en/stable/concepts/metrics/'
+    - 'Zheng et al. 2023, Judging LLM-as-a-Judge: https://arxiv.org/abs/2306.05685'
+- id: '11.1'
+  title: FastAPI service
+  epic: E11
+  points: 3
+  sprint: 6
+  story: As a future integrator, I want a clean HTTP API, so that the assistant could plug into an installer app.
+  done_when: /ask, /health and /pages/{doc_id}/{page} work, with OpenAPI docs and integration tests.
+  tasks:
+  - /ask takes question, optional model and firmware, and returns answer, citations and a clarifying question if needed
+  - Pydantic request and response models
+  - Integration tests against the saved index with a mocked model
+  - Run everything with docker compose up
+  study:
+  - topic: REST API design, request validation, OpenAPI docs, integration tests
+    sources:
+    - Primer topic 14 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'FastAPI tutorial: https://fastapi.tiangolo.com/tutorial/'
+- id: '10.5'
+  title: Ablation report
+  epic: E10
+  points: 3
+  sprint: 7
+  story: As a hiring manager, I want to see what each design choice bought, so that I know the candidate can reason about trade-offs.
+  done_when: docs/results.md has one table comparing configurations on the same eval set.
+  tasks:
+  - Compare BM25 only, dense only, hybrid, hybrid plus rerank, and with or without the model pre-filter
+  - Compare indexing with and without figure descriptions and table-row records
+  - Write three sentences on what each result means
+  study:
+  - topic: 'Ablation studies: change one thing at a time on a frozen eval set, report the deltas'
+    sources:
+    - Primer topic 13 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '10.6'
+  title: Eval in CI
+  epic: E10
+  points: 2
+  sprint: 7
+  story: As the developer, I want a quick retrieval check on every pull request, so that regressions are caught before merge.
+  done_when: CI runs retrieval metrics on the seed set against a small saved index and fails if recall drops.
+  tasks:
+  - Commit a small index snapshot built from records only, not PDFs
+  - Run retrieval-only metrics, since CI has no local LLM
+  - Fail the job on a recall drop beyond a set margin
+  study:
+  - topic: Regression testing in CI with thresholds
+    sources:
+    - 'GitHub Actions docs: https://docs.github.com/en/actions'
+- id: '11.2'
+  title: Mobile-friendly UI
+  epic: E11
+  points: 3
+  sprint: 7
+  story: As an installer on a roof, I want a simple screen on my phone, so that I can ask with one thumb.
+  done_when: On a phone-width screen a user picks a model, types a code and sees the answer with tappable page citations.
+  tasks:
+  - Streamlit app calling the API
+  - Model picker fed by the alias table, with free-text fallback
+  - Answer card with safety notes first, then steps, then citations and page images
+  - Thumbs up or down under each answer
+  study:
+  - topic: Quick UIs for ML apps and mobile-friendly layout
+    sources:
+    - 'Streamlit docs: https://docs.streamlit.io/'
+- id: '12.1'
+  title: Query tracing
+  epic: E12
+  points: 2
+  sprint: 7
+  story: As the developer, I want a trace of every query's stages, so that I can see why a bad answer happened.
+  done_when: Each query shows parsed query, filter, retrieved records, rerank scores, prompt, answer and latency per stage in Arize Phoenix.
+  tasks:
+  - Add OpenTelemetry spans around each stage
+  - Run Phoenix locally from docker compose
+  - Take a screenshot of one trace for the README
+  study:
+  - topic: 'Tracing LLM apps: spans, attributes, latency per stage'
+    sources:
+    - Primer topic 15 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'OpenTelemetry for Python: https://opentelemetry.io/docs/languages/python/'
+    - 'Arize Phoenix docs: https://arize.com/docs/phoenix'
+- id: '12.2'
+  title: Feedback capture
+  epic: E12
+  points: 1
+  sprint: 7
+  story: As the developer, I want thumbs up or down stored with the trace, so that bad answers become new eval questions.
+  done_when: Feedback is saved with the trace id and exported by make feedback.
+  tasks:
+  - Store feedback in SQLite with the trace id
+  - Export thumbs-down cases as draft eval questions
+  study:
+  - topic: 'Closing the loop: turning user feedback into eval cases'
+    sources:
+    - Primer topic 15 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '11.3'
+  title: Optional hosted text-only demo
+  epic: E11
+  points: 3
+  sprint: 8
+  story: As a recruiter, I want to try the assistant from a link, so that I don't need to install anything.
+  done_when: A Hugging Face Space answers code questions using the saved index and a free API for the answer model, with a banner saying it is the light version.
+  tasks:
+  - Package API and UI in one Docker Space on CPU Basic
+  - Load the Qdrant snapshot at start-up
+  - Use the Gemini or Groq free tier through the model client; key stored as a Space secret
+  - Note in the README that the Space sleeps when idle and that the full version runs locally
+  study:
+  - topic: Containerising an app for a free host; cold starts and secrets
+    sources:
+    - 'Hugging Face Docker Spaces: https://huggingface.co/docs/hub/spaces-sdks-docker'
+- id: '13.1'
+  title: README with results
+  epic: E13
+  points: 3
+  sprint: 8
+  story: As a hiring manager at Enpal or 1Komma5°, I want to understand the project in two minutes, so that I decide to interview the candidate.
+  done_when: The README opens with the installer problem, shows the architecture diagram and the ablation table, and has a five-command quick start.
+  tasks:
+  - Problem and user, in three sentences
+  - Architecture diagram and the key decisions
+  - Results table and what you would do next
+  - Quick start that works on a fresh machine
+  study:
+  - topic: 'Writing a README that sells: problem, demo, results, quick start'
+    sources:
+    - 'Make a README: https://www.makeareadme.com/'
+- id: '13.2'
+  title: Demo video
+  epic: E13
+  points: 2
+  sprint: 8
+  story: As a recruiter, I want a short video, so that I see it working without running it.
+  done_when: A video of three minutes or less is linked at the top of the README.
+  tasks:
+  - 'Script three cases: a code lookup, a diagram question, and a wrong-model trap that abstains'
+  - Record with a free screen recorder and upload unlisted
+- id: '13.3'
+  title: Technical write-up
+  epic: E13
+  points: 3
+  sprint: 8
+  story: As a hiring manager, I want a write-up of the hard parts, so that I can judge the depth of the work.
+  done_when: A post of about 1,500 words covers tables as records, the model filter, VLM descriptions and the eval results.
+  tasks:
+  - Draft from the sprint log and results
+  - Publish on a free blog platform or as docs/writeup.md
+  - Share on LinkedIn tagged with the use case
+- id: '14.1'
+  title: ColQwen2 visual retrieval experiment
+  epic: E14
+  points: 5
+  sprint: 8
+  stretch: true
+  story: As the developer, I want to compare page-image retrieval with VLM descriptions, so that I can say with numbers which works better for schematics.
+  done_when: docs/results.md adds ColQwen2 rows for the figure questions.
+  tasks:
+  - Index page images with ColQwen2 in a Kaggle GPU notebook
+  - Run the figure-question subset through both approaches
+  - Write up cost, speed and quality differences
+  study:
+  - topic: Late-interaction visual retrieval (ColPali / ColQwen2) versus caption-based indexing
+    sources:
+    - Primer topic 9 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+    - 'ColPali paper: https://arxiv.org/abs/2407.01449'
+    - 'ColPali repo: https://github.com/illuin-tech/colpali'
+- id: '15.1'
+  title: Heat pump corpus
+  epic: E15
+  points: 3
+  sprint: 9
+  story: As an installer who fits heat pumps too, I want Viessmann heat pump manuals in the same assistant, so that one tool covers both jobs.
+  done_when: English Viessmann heat pump manuals (and their controller manuals) are in the manifest and pass the quality gate.
+  tasks:
+  - Add the manuals thread 3 picks for v2 to the manifest
+  - Run the existing ingestion and review the quality report
+  - List what failed to parse, as input to 15.3
+  study:
+  - topic: 'Domain basics: how air-source heat pumps work and what their fault codes cover'
+    sources:
+    - 'US DOE, Heat Pumps: https://www.energy.gov/energysaver/heat-pump-systems'
+    - Read the fault-message chapter of one Viessmann controller manual
+- id: '15.2'
+  title: Metadata schema for heat pumps
+  epic: E15
+  points: 3
+  sprint: 9
+  story: As an installer, I want heat pump answers to match my outdoor unit and its controller, so that the fault code is read from the right list.
+  done_when: Records carry device type, unit model and controller model, and inverter results are unchanged.
+  tasks:
+  - Add device_type, unit_model and controller_model to the schema
+  - Extend regex and aliases for heat pump and controller names
+  - Backfill device_type = inverter on v1 records and re-run the v1 eval
+  study:
+  - topic: 'Schema evolution: adding fields without breaking existing records'
+    sources:
+    - 'Pydantic docs, optional fields and defaults: https://docs.pydantic.dev/latest/'
+- id: '15.3'
+  title: Heat pump tables and figures
+  epic: E15
+  points: 5
+  sprint: 9
+  story: As an installer, I want fault-code lists, parameter tables and hydraulic diagrams handled as well as inverter tables, so that heat pump answers are just as precise.
+  done_when: Heat pump fault-code rows pass 20 hand-checked golden tests, and hydraulic and refrigerant diagrams have descriptions.
+  tasks:
+  - Map heat pump fault-code columns to the common schema
+  - Treat parameter lists (number, name, range, default) as their own record type
+  - Adapt the VLM prompt for hydraulic and refrigerant circuit diagrams
+  study:
+  - topic: Reading hydraulic and refrigerant circuit diagrams well enough to judge a VLM description
+    sources:
+    - 'US DOE, Heat Pumps (components and cycle): https://www.energy.gov/energysaver/heat-pump-systems'
+- id: '15.4'
+  title: Device-type routing
+  epic: E15
+  points: 3
+  sprint: 10
+  story: As an installer, I want the assistant to know whether I mean my inverter or my heat pump, so that codes shared by both never mix.
+  done_when: Device type is detected correctly on all v2 eval questions, or a clarifying question is asked.
+  tasks:
+  - Add device type to query understanding
+  - Add it to the Qdrant pre-filter
+  - Add a device toggle to the UI
+  study:
+  - topic: Routing queries across domains with metadata
+    sources:
+    - Primer topic 10 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '15.5'
+  title: Heat pump eval and regression
+  epic: E15
+  points: 5
+  sprint: 10
+  story: As a hiring manager, I want to see v2 measured the same way as v1, so that I know adding a domain did not break the first one.
+  done_when: About 50 heat pump questions are scored, and v1 metrics are within the agreed margin of their v1 release values.
+  tasks:
+  - Add thread 3's heat pump questions, including cross-device traps
+  - Run the full eval on both domains
+  - Add a v1 versus v2 table to docs/results.md
+  study:
+  - topic: Regression testing when a new domain is added
+    sources:
+    - Primer topic 13 in the architecture doc (https://claude.ai/code/artifact/4e34a1e8-5a8e-4f0a-b9b3-5e229cffe916)
+- id: '15.6'
+  title: v2 release
+  epic: E15
+  points: 2
+  sprint: 10
+  story: As a recruiter, I want the README and demo to show both domains, so that the portfolio reflects the latest work.
+  done_when: v2.0 is tagged, and the README, demo video and write-up mention heat pumps.
+  tasks:
+  - Update README, results and architecture notes
+  - Record a one-minute heat pump add-on to the demo
+  - Tag the release with notes

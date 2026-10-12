@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__vikunja",
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}
