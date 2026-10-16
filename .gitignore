@@ -1,5 +1,7 @@
-# Append to your .gitignore
 .env
 .env.*
 .claude/settings.local.json
 data/
+__pycache__/
+*.pyc
+*.pyo
