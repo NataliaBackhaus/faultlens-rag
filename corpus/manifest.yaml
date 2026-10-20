@@ -1,0 +1,22 @@
+manuals:
+- id: sma_sunnyboy_hf_2-3kw
+  manufacturer: SMA
+  title: Sunny Boy 2000HF / 2500HF / 3000HF
+  document_type: installation_manual
+  url: https://files.sma.de/downloads/SB20HF-30HF-IA-en-32.pdf
+  sha256: 40fd59338796f7d5e0caba27abc79f8f905ded3dc3e2bc8595ee392be79f6d67
+
+- id: sma_sunnyboy_tl_3-5kw
+  manufacturer: SMA
+  title: Sunny Boy 3000TL / 4000TL / 5000TL
+  document_type: installation_manual
+  url: https://files.sma.de/downloads/SB30TL_40TL_50TL-IEN103630.pdf
+  sha256: 52f793a6ee4a221fdac04ac0d495a1f405725a5064d7d30b8ccdc31de9339bd8
+
+- id: fronius_symo_10-20kw
+  manufacturer: Fronius
+  title: Fronius Symo 10.0-3-M / 12.5-3-M / 15.0-3-M / 17.5-3-M / 20.0-3-M
+  document_type: operating_manual
+  url: 
+    https://www.europe-solarstore.com/download/fronius/symo/42_0426_0175_EN_358677_snapshot.pdf
+  sha256: c7326913c0e4349d3f954180f75cb418d2e9b9d849260aa98b6b8ebc5a4cf193

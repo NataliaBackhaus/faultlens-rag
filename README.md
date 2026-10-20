@@ -24,3 +24,7 @@ Measured inference speed (Ollama, GPU via ROCm):
 | qwen2.5vl:7b | Vision + text | ~75 |
 
 At 75 tokens/s, describing ~500 figures takes roughly 15-20 minutes locally - no Kaggle GPU needed for ingestion.
+
+## Data and copyright
+
+Manufacturer manuals are copyrighted by their respective owners and are not included in this repository. Run `make download` to fetch them locally.

@@ -2,6 +2,20 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 01 · planning · 2026-10-20
+Goal: First end-to-end RAG path — download manuals, render pages, parse with Docling, answer one error-code question.
+Committed: 13 pts (2.1, 3.1, 3.2, 3.3)
+Carried over: 2.1 (from sprint:00)
+Due: 2026-10-24
+
+## Sprint 00 · review and retro · 2026-10-20
+Goal: Repo, local models, CI and the manual list.
+Committed: 12 pts · Done: 9 pts · Carried over: 2.1
+Metrics: n/a (eval set not yet created)
+Went well: task organisation was clear; all four done stories passed DoD on first check.
+To improve: fear of writing code delayed starting the last story.
+Next sprint changes: Natalia will write more code herself; 2.1 carry-over is first priority.
+
 ## Sprint 00 · planning · 2026-10-09
 Goal: Repo, local models, CI and the manual list.
 Committed: 12 pts (1.1, 1.2, 1.3, 1.4, 2.1)
