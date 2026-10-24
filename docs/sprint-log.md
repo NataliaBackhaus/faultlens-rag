@@ -2,6 +2,14 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 01 · review and retro · 2026-10-24
+Goal: First end-to-end RAG path — download manuals, render pages, parse with Docling, answer one error-code question.
+Committed: 13 pts · Done: 13 pts · Carried over: none
+Metrics: n/a (eval set not yet created)
+Went well: wrote most scripts independently; understood library internals without guidance.
+To improve: Docling documentation is hard to navigate — used source code exploration instead. Personal commitments reduced available time mid-sprint.
+Next sprint changes: none requested.
+
 ## Sprint 01 · planning · 2026-10-20
 Goal: First end-to-end RAG path — download manuals, render pages, parse with Docling, answer one error-code question.
 Committed: 13 pts (2.1, 3.1, 3.2, 3.3)
