@@ -2,6 +2,15 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 02 · 3.4 region classification accuracy · 2026-10-27
+Sample: 50 elements across 3 manuals (seed=42). Correct: 50/50. Accuracy: 100%.
+
+## Sprint 02 · planning · 2026-10-26
+Goal: Clean ingestion — classify regions, flag quality issues, extract error-code rows and device metadata.
+Committed: 13 pts (3.4, 3.5, 4.1, 5.1)
+Carried over: 3.4 (from sprint:01)
+Due: 2026-10-31
+
 ## Sprint 01 · review and retro · 2026-10-24
 Goal: First end-to-end RAG path — download manuals, render pages, parse with Docling, answer one error-code question.
 Committed: 13 pts · Done: 13 pts · Carried over: none
