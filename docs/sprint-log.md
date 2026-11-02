@@ -2,8 +2,22 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 03 · planning · 2026-11-02
+Goal: Structured extraction — error-code rows, device metadata, model aliases and figure crops.
+Committed: 13 pts (4.1, 5.1, 5.2, 6.1)
+Carried over: 4.1, 5.1 (from sprint:02)
+Due: 2026-11-07
+
 ## Sprint 02 · 3.4 region classification accuracy · 2026-10-27
 Sample: 50 elements across 3 manuals (seed=42). Correct: 50/50. Accuracy: 100%.
+
+## Sprint 02 · review and retro · 2026-11-02
+Goal: Clean ingestion — classify regions, flag quality issues, extract error-code rows and device metadata.
+Committed: 13 pts · Done: 5 pts · Carried over: 4.1, 5.1
+Metrics: n/a (eval set not yet created)
+Went well: both completed stories passed DoD on first check; classifier reached 100% accuracy on 50-element sample.
+To improve: illness reduced available time; OCR currently applied to the full document rather than flagged pages only (Docling has no per-page OCR API).
+Next sprint changes: none requested.
 
 ## Sprint 02 · planning · 2026-10-26
 Goal: Clean ingestion — classify regions, flag quality issues, extract error-code rows and device metadata.

@@ -33,6 +33,7 @@ def parse_manual(manual: dict) -> list[Element]:
             elem_type = "heading"
         elif isinstance(item, TableItem):
             elem_type = "table"
+            text = item.export_to_markdown(doc)
         elif isinstance(item, PictureItem):
             elem_type = "figure"
         elif isinstance(item, (TextItem, ListItem)):
