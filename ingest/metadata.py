@@ -3,6 +3,7 @@ import re
 
 MANUFACTURERS = ["SMA", "Fronius"]
 FAMILIES = ["Sunny Boy", "Symo", "SYMO", "SB", "Tripower"]
+MODEL_TABLE_HEADERS = {"model", "type", "device", "applies to", "valid for", "inverter"}
 
 MODEL_PATTERN = re.compile(r"\b[A-Z]{1,5}[-\s]?\d+[\d.\-]*[A-Z0-9\-]*\b")
 REVISION_PATTERN = re.compile(r"[Rr]ev(?:ision)?\.?\s*([\d.]+)")
@@ -69,9 +70,51 @@ def extract_with_llm(elements: list[dict], llm) -> dict:
     return {}
 
 
+def _normalize(s: str) -> str:
+    return re.sub(r"[\s\-.]", "", s).lower()
+
+
+def narrow_models_from_tables(elements: list[dict], models: list[str]) -> list[str]:
+    """Scan tables for model-listing columns; return only models that appear there."""
+    if not models:
+        return models
+
+    found = set()
+    for elem in elements:
+        if elem["type"] != "table":
+            continue
+
+        lines = elem["text"].split("\n")
+        cells = [c.strip().lower() for c in lines[0].strip().strip("|").split("|")]
+        model_col = None
+
+        for i, cell in enumerate(cells):
+            if cell in MODEL_TABLE_HEADERS:
+                model_col = i
+                break
+
+        if model_col is None:
+            continue
+
+        for line in lines[2:]:
+            if not line.strip():
+                continue
+            row_cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if model_col < len(row_cells):
+                found.add(row_cells[model_col])
+
+    if not found:
+        return models
+
+    norm_found = {_normalize(v) for v in found}
+    narrowed = [m for m in models if _normalize(m) in norm_found]
+    return narrowed if narrowed else models
+
+
 def extract_metadata(elements: list[dict], llm=None) -> dict:
     """Extract metadata using regex first, LLM for gaps."""
     result = extract_with_regex(elements)
     if llm and not (result["manufacturer"] and result["models"]):
         result = extract_with_llm(elements, llm)
+    result["models"] = narrow_models_from_tables(elements, result["models"])
     return result
