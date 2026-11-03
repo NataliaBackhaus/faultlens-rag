@@ -115,6 +115,8 @@ def test_crop_figure_file_exists():
 
 
 def test_crop_figure_decorative_returns_none():
+    if not (PAGES_DIR / DOC_ID).exists():
+        pytest.skip("page renders not available — run render_pages first")
     # small icon: 10x10 points
     elem = make_figure(50, 310, 60, 300, page=1)
     result = crop_figure(elem, DOC_ID)
