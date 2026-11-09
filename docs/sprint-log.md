@@ -2,6 +2,22 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 04 · planning · 2026-11-09
+Goal: Chunking, eval set and hybrid retrieval — structured chunks, seed questions and query understanding.
+Committed: 13 pts (7.1, 10.1, 7.2, 8.1)
+Carried over: 7.1, 10.1 (from sprint:03)
+Due: 2026-11-14
+
+## Sprint 03 · review and retro · 2026-11-09
+Goal: Structured extraction — error-code rows, device metadata, model aliases and figure crops.
+Committed: 13 pts · Done: 13 pts · Carry-over: none
+CI: 92 tests, 0 failures.
+Metrics: n/a (eval set not yet created)
+Went well: all 4 stories completed with 4 days to spare; velocity fully recovered from sprint 02.
+To improve: none identified.
+Next sprint changes: none.
+Observer note: sprint finished early — Natalia freed time for personal commitments mid-week.
+
 ## Sprint 03 · planning · 2026-11-02
 Goal: Structured extraction — error-code rows, device metadata, model aliases and figure crops.
 Committed: 13 pts (4.1, 5.1, 5.2, 6.1)
