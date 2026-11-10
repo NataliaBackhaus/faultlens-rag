@@ -17,7 +17,7 @@ def main():
         doc_id = manual["id"]
         parsed_path = PARSED_DIR / f"{doc_id}.json"
         if not parsed_path.exists():
-            print(f"skip {doc_id} — parsed JSON not found")
+            print(f"skip {doc_id} - parsed JSON not found")
             continue
 
         data = json.loads(parsed_path.read_text())
