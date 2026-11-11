@@ -113,6 +113,25 @@ def chunk_document(elements: list[dict], doc_meta: dict) -> list[Record]:
                 )
             )
 
+            for line in text.split("\n")[2:]:
+                cells = [c.strip() for c in line.strip().strip("|").split("|")]
+                if not cells or not cells[0].isdigit():
+                    continue
+                records.append(
+                    Record(
+                        doc_id=doc_meta["doc_id"],
+                        record_type="table_row",
+                        text=" | ".join(cells),
+                        page=page,
+                        bbox=bbox,
+                        section_path=section,
+                        manufacturer=doc_meta["manufacturer"],
+                        models=doc_meta["models"],
+                        firmware=doc_meta["firmware_range"],
+                        error_codes=[cells[0]],
+                    )
+                )
+
         elif etype == "figure":
             if current_texts:
                 records.extend(
