@@ -1,0 +1,2 @@
+date,commit,recall@5,recall@10,mrr,wrong_model_rate
+2026-11-13,ee9723d,0.143,0.314,0.145,1.0
