@@ -2,6 +2,16 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 04 · review and retro · 2026-11-14
+Goal: Chunking, eval set and hybrid retrieval — structured chunks, seed questions and query understanding.
+Committed: 13 pts · Done: 18 pts (pulled in 8.2 + 10.2 mid-sprint) · Carry-over: none
+CI: 178 tests, 0 failures.
+Metrics (first run, no prior sprint to compare): recall@5 0.143, recall@10 0.314, MRR 0.145, wrong_model_rate 1.0 ⚠️
+Went well: programação correu bem; sprint mais forte até agora — 18 pts vs 13 comprometidos.
+To improve: métricas estão estranhas; wrong_model_rate=1.0 indica incompatibilidade de formato entre questions.jsonl e payload do Qdrant.
+Next sprint changes: corrigir table_row indexing no chunk_document e incompatibilidade de formato de modelo nas métricas.
+Observer note: velocidade em alta (9→13→5→13→18); baseline de métricas estabelecido mas requer correção antes de ser confiável.
+
 ## Sprint 04 · planning · 2026-11-09
 Goal: Chunking, eval set and hybrid retrieval — structured chunks, seed questions and query understanding.
 Committed: 13 pts (7.1, 10.1, 7.2, 8.1)
