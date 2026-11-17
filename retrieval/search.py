@@ -11,6 +11,7 @@ from qdrant_client.models import (
 
 from ingest.index import COLLECTION_NAME, DENSE_MODEL, SPARSE_MODEL
 from retrieval.query import parse_query
+from retrieval.rerank import rerank
 
 
 def build_filter(model: str | None, manufacturer: str | None) -> Filter | None:
@@ -122,12 +123,12 @@ def retrieve(client, query_text: str) -> list[dict]:
         if results:
             return results
 
-    results = search(client, query_text, parsed["model"], manufacturer=None)
+    results = search(client, query_text, parsed["model"], manufacturer=None, k=30)
 
     if not results and parsed["model"]:
         manufacturer = _manufacturer_from_model(parsed["model"])
-        results = search(client, query_text, model=None, manufacturer=manufacturer)
+        results = search(client, query_text, model=None, manufacturer=manufacturer, k=30)
         for r in results:
             r["_manufacturer_fallback"] = True
 
-    return results
+    return rerank(query_text, results)
