@@ -50,7 +50,13 @@ def exact_code_lookup(client, error_code: str, model: str | None) -> list[dict]:
 
 
 def search(
-    client, query: str, model: str | None, manufacturer: str | None, k: int = 10
+    client,
+    query: str,
+    model: str | None,
+    manufacturer: str | None,
+    k: int = 10,
+    prefetch_k: int = 20,
+    mode: str = "hybrid",
 ) -> list[dict]:
     dense_model = TextEmbedding(model_name=DENSE_MODEL)
     sparse_model = SparseTextEmbedding(model_name=SPARSE_MODEL)
@@ -63,16 +69,37 @@ def search(
 
     filters = build_filter(model, manufacturer)
 
-    results = client.query_points(
-        collection_name=COLLECTION_NAME,
-        prefetch=[
-            Prefetch(query=dense_vec, using="dense", filter=filters, limit=k * 2),
-            Prefetch(query=sparse_vec, using="bm25", filter=filters, limit=k * 2),
-        ],
-        query=FusionQuery(fusion=Fusion.RRF),
-        limit=k,
-        with_payload=True,
-    )
+    if mode == "dense":
+        results = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=dense_vec,
+            using="dense",
+            query_filter=filters,
+            limit=k,
+            with_payload=True,
+        )
+
+    elif mode == "bm25":
+        results = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=sparse_vec,
+            using="bm25",
+            query_filter=filters,
+            limit=k,
+            with_payload=True,
+        )
+
+    else:
+        results = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                Prefetch(query=dense_vec, using="dense", filter=filters, limit=prefetch_k),
+                Prefetch(query=sparse_vec, using="bm25", filter=filters, limit=prefetch_k),
+            ],
+            query=FusionQuery(fusion=Fusion.RRF),
+            limit=k,
+            with_payload=True,
+        )
 
     return [p.payload for p in results.points]
 
