@@ -2,6 +2,12 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 05 · planning · 2026-11-17
+Goal: Figuras indexadas, retrieval afinado e primeira resposta ancorada no manual.
+Committed: 18 pts (8.3, 8.4, 6.2, 9.1, 9.2)
+Carried over: none
+Due: 2026-11-21
+
 ## Sprint 04 · review and retro · 2026-11-14
 Goal: Chunking, eval set and hybrid retrieval — structured chunks, seed questions and query understanding.
 Committed: 13 pts · Done: 18 pts (pulled in 8.2 + 10.2 mid-sprint) · Carry-over: none

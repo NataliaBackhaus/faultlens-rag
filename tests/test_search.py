@@ -29,7 +29,7 @@ def test_build_filter_model_only():
     f = build_filter("sma_sunnyboy_hf_2-3kw", None)
     assert isinstance(f, Filter)
     assert len(f.must) == 1
-    assert f.must[0].key == "models"
+    assert f.must[0].key == "doc_id"
 
 
 def test_build_filter_manufacturer_only():
@@ -44,7 +44,7 @@ def test_build_filter_both():
     assert isinstance(f, Filter)
     assert len(f.must) == 2
     keys = {c.key for c in f.must}
-    assert keys == {"models", "manufacturer"}
+    assert keys == {"doc_id", "manufacturer"}
 
 
 # --- exact_code_lookup ---
@@ -73,7 +73,7 @@ def test_exact_code_lookup_adds_model_condition():
     exact_code_lookup(client, "34", "sma_sunnyboy_hf_2-3kw")
     f = client.scroll.call_args.kwargs["scroll_filter"]
     keys = [c.key for c in f.must]
-    assert "models" in keys
+    assert "doc_id" in keys
 
 
 def test_exact_code_lookup_no_model_omits_models_condition():
@@ -82,7 +82,7 @@ def test_exact_code_lookup_no_model_omits_models_condition():
     exact_code_lookup(client, "34", None)
     f = client.scroll.call_args.kwargs["scroll_filter"]
     keys = [c.key for c in f.must]
-    assert "models" not in keys
+    assert "doc_id" not in keys
 
 
 # --- retrieve ---

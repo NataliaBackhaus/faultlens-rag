@@ -25,7 +25,7 @@ def main():
         all_recall_5.append(recall_at_k(results, q["gold_doc"], q["gold_page"], k=5))
         all_recall_10.append(recall_at_k(results, q["gold_doc"], q["gold_page"], k=10))
         all_mrr.append(mrr(results, q["gold_doc"], q["gold_page"]))
-        all_wmr.append(wrong_model_rate(results, q["model"]))
+        all_wmr.append(wrong_model_rate(results, q["gold_doc"]))
 
     mean_recall_5 = mean(all_recall_5)
     mean_recall_10 = mean(all_recall_10)

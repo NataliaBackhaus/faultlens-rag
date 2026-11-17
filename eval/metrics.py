@@ -12,13 +12,10 @@ def mrr(results: list[dict], gold_doc: str, gold_page: int) -> float:
     return 0.0
 
 
-def wrong_model_rate(results: list[dict], expected_model: str) -> float:
-    wrong_count = 0
+def wrong_model_rate(results: list[dict], gold_doc: str | None) -> float:
     if not results:
         return 0.0
-
-    for result in results:
-        if expected_model not in result["models"]:
-            wrong_count = wrong_count + 1
-
-    return wrong_count / len(results)
+    if gold_doc is None:
+        return 1.0
+    wrong = sum(1 for r in results if r.get("doc_id") != gold_doc)
+    return wrong / len(results)

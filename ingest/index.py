@@ -32,6 +32,7 @@ def create_collection(client):
 
 def create_payload_indexes(client):
     for field, schema_type in [
+        ("doc_id", models.PayloadSchemaType.KEYWORD),
         ("manufacturer", models.PayloadSchemaType.KEYWORD),
         ("models", models.PayloadSchemaType.KEYWORD),
         ("firmware", models.PayloadSchemaType.KEYWORD),

@@ -22,9 +22,10 @@ def main():
     manifest = yaml.load(MANIFEST_PATH)
 
     client = get_client()
-    if not client.collection_exists(COLLECTION_NAME):
-        create_collection(client)
-        create_payload_indexes(client)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    create_collection(client)
+    create_payload_indexes(client)
 
     for manual in manifest["manuals"]:
         doc_id = manual["id"]

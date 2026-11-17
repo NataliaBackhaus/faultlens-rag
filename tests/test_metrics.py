@@ -72,3 +72,7 @@ def test_wrong_model_rate_half_wrong():
 
 def test_wrong_model_rate_empty_results():
     assert wrong_model_rate([], GOLD_DOC) == 0.0
+
+
+def test_wrong_model_rate_null_gold_doc():
+    assert wrong_model_rate([HIT], None) == 1.0

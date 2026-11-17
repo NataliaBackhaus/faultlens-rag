@@ -17,7 +17,7 @@ def build_filter(model: str | None, manufacturer: str | None) -> Filter | None:
     conditions = []
 
     if model:
-        conditions.append(FieldCondition(key="models", match=MatchValue(value=model)))
+        conditions.append(FieldCondition(key="doc_id", match=MatchValue(value=model)))
 
     if manufacturer:
         conditions.append(FieldCondition(key="manufacturer", match=MatchValue(value=manufacturer)))
@@ -37,7 +37,7 @@ def exact_code_lookup(client, error_code: str, model: str | None) -> list[dict]:
     )
 
     if model:
-        code_filter.must.append(FieldCondition(key="models", match=MatchValue(value=model)))
+        code_filter.must.append(FieldCondition(key="doc_id", match=MatchValue(value=model)))
 
     points, _ = client.scroll(
         collection_name=COLLECTION_NAME,
