@@ -1,4 +1,15 @@
-from ingest.chunk import MAX_CHARS, OVERLAP_CHARS, chunk_document, chunk_text
+import json
+import tempfile
+from pathlib import Path
+from unittest import mock
+
+from ingest.chunk import (
+    MAX_CHARS,
+    OVERLAP_CHARS,
+    chunk_document,
+    chunk_text,
+    load_figure_descriptions,
+)
 
 DOC_META = {
     "doc_id": "sma_test",
@@ -128,3 +139,48 @@ def test_long_section_splits_into_multiple_records():
 
 def test_empty_elements_returns_empty():
     assert chunk_document([], DOC_META) == []
+
+
+# --- figure descriptions ---
+
+
+def test_figure_uses_description_when_provided():
+    elems = [make_elem("figure", "", bbox=[153.0, 400.0, 300.0, 200.0])]
+    descriptions = {("sma_test", 1, 153): "Wiring diagram showing DC input terminals."}
+    records = chunk_document(elems, DOC_META, figure_descriptions=descriptions)
+    fig = next(r for r in records if r.record_type == "figure")
+    assert fig.text == "Wiring diagram showing DC input terminals."
+
+
+def test_figure_falls_back_to_original_text_when_no_description():
+    elems = [make_elem("figure", "Fig. 1", bbox=[50.0, 400.0, 300.0, 200.0])]
+    descriptions = {}
+    records = chunk_document(elems, DOC_META, figure_descriptions=descriptions)
+    fig = next(r for r in records if r.record_type == "figure")
+    assert fig.text == "Fig. 1"
+
+
+def test_load_figure_descriptions_returns_empty_when_missing():
+    with mock.patch("ingest.chunk._FIGURE_DESCRIPTIONS_PATH", Path("/nonexistent/path.jsonl")):
+        result = load_figure_descriptions()
+    assert result == {}
+
+
+def test_load_figure_descriptions_parses_jsonl():
+    entries = [
+        {"doc_id": "sma_test", "page": 1, "bbox_left": 153, "description": "LED indicators."},
+        {"doc_id": "sma_test", "page": 2, "bbox_left": 50, "description": "DC wiring diagram."},
+    ]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        for entry in entries:
+            f.write(json.dumps(entry) + "\n")
+        tmp_path = Path(f.name)
+
+    with mock.patch("ingest.chunk._FIGURE_DESCRIPTIONS_PATH", tmp_path):
+        result = load_figure_descriptions()
+
+    tmp_path.unlink()
+    assert result == {
+        ("sma_test", 1, 153): "LED indicators.",
+        ("sma_test", 2, 50): "DC wiring diagram.",
+    }

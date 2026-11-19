@@ -1,6 +1,10 @@
+import json
+from pathlib import Path
+
 from ingest.record import Record
 
 MAX_CHARS = 1500
+_FIGURE_DESCRIPTIONS_PATH = Path("data/figure_descriptions.jsonl")
 OVERLAP_CHARS = 200
 WARNING_PREFIXES = ("WARNING", "CAUTION", "DANGER", "NOTE")
 
@@ -53,7 +57,24 @@ def _make_prose_records(
     return records
 
 
-def chunk_document(elements: list[dict], doc_meta: dict) -> list[Record]:
+def load_figure_descriptions() -> dict[tuple[str, int, int], str]:
+    if not _FIGURE_DESCRIPTIONS_PATH.exists():
+        return {}
+    descriptions: dict[tuple[str, int, int], str] = {}
+    with open(_FIGURE_DESCRIPTIONS_PATH) as f:
+        for line in f:
+            if line.strip():
+                entry = json.loads(line)
+                key = (entry["doc_id"], entry["page"], entry["bbox_left"])
+                descriptions[key] = entry["description"]
+    return descriptions
+
+
+def chunk_document(
+    elements: list[dict],
+    doc_meta: dict,
+    figure_descriptions: dict[tuple[str, int, int], str] | None = None,
+) -> list[Record]:
     records = []
     current_texts = []
     current_section = None
@@ -142,11 +163,13 @@ def chunk_document(elements: list[dict], doc_meta: dict) -> list[Record]:
                 current_texts = []
                 current_section = None
 
+            fig_key = (doc_meta["doc_id"], page, int(bbox[0]))
+            fig_text = figure_descriptions.get(fig_key, text) if figure_descriptions else text
             records.append(
                 Record(
                     doc_id=doc_meta["doc_id"],
                     record_type="figure",
-                    text=text,
+                    text=fig_text,
                     page=page,
                     bbox=bbox,
                     section_path=section,

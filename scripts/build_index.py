@@ -3,7 +3,7 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-from ingest.chunk import chunk_document
+from ingest.chunk import chunk_document, load_figure_descriptions
 from ingest.index import (
     COLLECTION_NAME,
     create_collection,
@@ -27,6 +27,10 @@ def main():
     create_collection(client)
     create_payload_indexes(client)
 
+    figure_descriptions = load_figure_descriptions()
+    if figure_descriptions:
+        print(f"Loaded {len(figure_descriptions)} figure descriptions")
+
     for manual in manifest["manuals"]:
         doc_id = manual["id"]
         parsed_path = PARSED_DIR / f"{doc_id}.json"
@@ -37,7 +41,7 @@ def main():
         elements = json.loads(parsed_path.read_text())["elements"]
         metadata = extract_metadata(elements)
         metadata["doc_id"] = doc_id
-        records = chunk_document(elements, metadata)
+        records = chunk_document(elements, metadata, figure_descriptions)
         upsert_records(client, records)
         print(f"{doc_id}: {len(records)} records indexed")
 
