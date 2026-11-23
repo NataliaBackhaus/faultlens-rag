@@ -2,6 +2,22 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 06 · planning · 2026-11-23
+Goal: API funcional e avaliação completa — eval set expandido, métricas de qualidade de resposta, API HTTP e UI básica.
+Committed: 20 pts (10.3, 10.4, 10.5, 10.6, 9.3, 11.1, 11.2, 12.2)
+Carried over: none
+Due: 2026-11-28
+
+## Sprint 05 · review and retro · 2026-11-20
+Goal: Figuras indexadas, retrieval afinado e primeira resposta ancorada no manual.
+Committed: 18 pts · Done: 18 pts · Carry-over: none
+CI: 129 tests, 0 failures.
+Metrics: recall@10 0.514, MRR 0.486, wrong_model_rate 0.400 (unchanged from sprint 04 — index rebuilt with figure descriptions but eval questions are error-code focused; citation accuracy and abstain rate not yet measured).
+Went well: 18 pts entregues mesmo com dois dias de folga; quantidade de pontos na sprint foi adequada.
+To improve: dificuldade com a parte de VLM (story 6.2) — conceito de caption-then-embed e execução do batch script foram os pontos mais desafiadores.
+Next sprint changes: aumentar capacidade para 20 pts.
+Observer note: velocidade estável nas últimas três sprints (13→18→18); entrega de 18 pts com dois dias a menos indica capacidade real acima do comprometido — 20 pts na próxima sprint é conservador e seguro.
+
 ## Sprint 05 · planning · 2026-11-17
 Goal: Figuras indexadas, retrieval afinado e primeira resposta ancorada no manual.
 Committed: 18 pts (8.3, 8.4, 6.2, 9.1, 9.2)
