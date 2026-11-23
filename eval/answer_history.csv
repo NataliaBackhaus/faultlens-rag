@@ -1,0 +1,2 @@
+date,commit,citation_accuracy,faithfulness,correctness,abstain_precision,abstain_recall
+2026-11-23,ba12b5a,0.4,0.862,0.862,1.0,0.343

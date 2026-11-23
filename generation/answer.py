@@ -47,13 +47,20 @@ def generate_answer(client, query: str, passages: list[dict]) -> dict:
         if p["record_type"] == "figure":
             fig_name = f"{p['page']:04d}_{int(p['bbox'][0]):04d}.png"
             png_path = Path("data/figures") / p["doc_id"] / fig_name
-            images.append(png_path)
+            if png_path.exists():
+                images.append(png_path)
 
-    response = client.generate(prompt, images=images if images else None)
+    try:
+        response = client.generate(prompt, images=images if images else None)
+    except Exception:
+        response = client.generate(prompt)
 
     if response.startswith("```"):
         response = response.split("```")[1]
         if response.startswith("json"):
             response = response[4:]
 
-    return json.loads(response)
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        return {"diagnosis": response, "causes": [], "steps": [], "safety": [], "citations": []}

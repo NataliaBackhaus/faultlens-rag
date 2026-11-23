@@ -4,8 +4,13 @@ def check_citations(answer: dict, passages: list[dict]) -> dict:
 
     for citation in answer["citations"]:
         parts = citation.split()
+        if len(parts) < 3:
+            continue
         doc_id = parts[1]
-        page = int(parts[2].replace("p.", ""))
+        try:
+            page = int(parts[2].replace("p.", ""))
+        except ValueError:
+            continue
         if (doc_id, page) in valid:
             filtered_citations.append(citation)
     answer["citations"] = filtered_citations
