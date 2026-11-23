@@ -32,3 +32,12 @@ jobs:
 
       - name: Test
         run: uv run pytest || [ $? -eq 5 ]
+
+      - name: Cache fastembed models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/fastembed
+          key: fastembed-${{ hashFiles('pyproject.toml') }}
+
+      - name: Retrieval eval (seed index)
+        run: uv run python scripts/ci_eval.py
