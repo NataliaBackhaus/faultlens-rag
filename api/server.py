@@ -1,13 +1,15 @@
 """FaultLens RAG - FastAPI service."""
 
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 
-from api.models import AskRequest, AskResponse, Citation
+from api.models import AskRequest, AskResponse, Citation, FeedbackRequest
 from api.page_image import PAGES_DIR, annotate_page
+from feedback.store import save_feedback
 from generation.answer import generate_answer
 from generation.guard import check_citations, should_abstain, wrong_model_abstain
 from generation.llm_client import OllamaClient
@@ -80,12 +82,14 @@ def health():
 def ask(body: AskRequest, request: Request):
     qdrant = request.app.state.qdrant
     llm = request.app.state.llm
+    trace_id = str(uuid.uuid4())
 
     passages = retrieve(qdrant, body.question)
     rerank_scores = [p.get("_score", 0.0) for p in passages]
 
     if should_abstain(rerank_scores):
         return AskResponse(
+            trace_id=trace_id,
             abstained=True,
             diagnosis="",
             causes=[],
@@ -97,6 +101,7 @@ def ask(body: AskRequest, request: Request):
     doc_id = MODEL_TO_DOC.get(body.model)
     if wrong_model_abstain(passages, doc_id):
         return AskResponse(
+            trace_id=trace_id,
             abstained=True,
             diagnosis="",
             causes=[],
@@ -124,6 +129,7 @@ def ask(body: AskRequest, request: Request):
         )
 
     return AskResponse(
+        trace_id=trace_id,
         abstained=False,
         diagnosis=answer["diagnosis"],
         causes=answer["causes"],
@@ -131,3 +137,10 @@ def ask(body: AskRequest, request: Request):
         safety=answer["safety"],
         citations=citations,
     )
+
+
+@app.post("/feedback", status_code=204)
+def feedback(body: FeedbackRequest):
+    if body.vote not in ("up", "down"):
+        raise HTTPException(status_code=422, detail="vote must be 'up' or 'down'")
+    save_feedback(body.trace_id, body.question, body.vote)

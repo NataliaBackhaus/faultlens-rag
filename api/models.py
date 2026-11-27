@@ -16,7 +16,14 @@ class Citation(BaseModel):
     page_image_url: str
 
 
+class FeedbackRequest(BaseModel):
+    trace_id: str
+    question: str
+    vote: str
+
+
 class AskResponse(BaseModel):
+    trace_id: str
     diagnosis: str
     causes: list[str]
     steps: list[str]

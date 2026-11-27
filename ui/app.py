@@ -69,6 +69,7 @@ if submitted and question.strip():
             resp.raise_for_status()
             data = resp.json()
             st.session_state["last_answer"] = data
+            st.session_state["last_question"] = question
             st.session_state["feedback"] = None
         except requests.exceptions.ConnectionError:
             st.error("Could not reach the API. Is the FastAPI server running?")
@@ -127,17 +128,37 @@ if answer.get("citations"):
                 st.caption("Page image not available (API unreachable)")
 
 # ---------------------------------------------------------------------------
-# Feedback buttons (captured in session state; 12.2 will POST to the API)
+# Feedback buttons - POST to /feedback when clicked
 # ---------------------------------------------------------------------------
 st.divider()
 st.markdown("**Was this helpful?**")
 col1, col2 = st.columns(2)
+
+
+def _send_feedback(vote: str) -> None:
+    if st.session_state.get("feedback"):
+        return
+    st.session_state["feedback"] = vote
+    try:
+        requests.post(
+            f"{API_URL}/feedback",
+            json={
+                "trace_id": answer["trace_id"],
+                "question": st.session_state.get("last_question", ""),
+                "vote": vote,
+            },
+            timeout=5,
+        )
+    except requests.exceptions.RequestException:
+        pass
+
+
 with col1:
     if st.button("👍 Yes", use_container_width=True):
-        st.session_state["feedback"] = "up"
+        _send_feedback("up")
 with col2:
     if st.button("👎 No", use_container_width=True):
-        st.session_state["feedback"] = "down"
+        _send_feedback("down")
 
 if st.session_state.get("feedback") == "up":
     st.success("Thanks for the feedback!")

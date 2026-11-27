@@ -1,4 +1,4 @@
-.PHONY: setup lint test ingest serve eval download
+.PHONY: setup lint test ingest serve eval download feedback
 
 setup:
 	uv sync --all-groups
@@ -22,3 +22,6 @@ eval:
 
 download:
 	uv run python -m ingest.download
+
+feedback:
+	uv run python -c "from feedback.store import export_negative; from pathlib import Path; n = export_negative(Path('eval/feedback_draft.jsonl')); print(f'{n} thumbs-down row(s) exported to eval/feedback_draft.jsonl')"
