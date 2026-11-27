@@ -2,6 +2,16 @@
 
 Newest entry first. Claude appends one entry per ceremony.
 
+## Sprint 06 · review and retro · 2026-11-27
+Goal: API funcional e avaliacao completa.
+Committed: 20 pts · Done: 20 pts · Carry-over: none
+CI: green, 10 API+feedback tests added.
+Metrics: recall@10 0.520 (+0.006), MRR 0.438 (-0.048 ⚠️), wrong_model_rate 0.464 (+0.064 ⚠️). New: citation_accuracy=0.40, faithfulness=0.862, abstain_precision=1.0, abstain_recall=0.343. MRR regression predates sprint 06 (retrieval unchanged); to investigate in sprint 07.
+Went well: maior entrega de pontos ate agora (20 pts), todas as histories concluidas.
+To improve: consistencia de dias trabalhados — 2 dias perdidos esta semana.
+Next sprint changes: trabalhar pelo menos 4 dias no projeto.
+Observer note: velocidade em alta constante (13→18→18→20 pts, zero carry-over); 2 dias a menos e ainda entregou tudo — capacidade real provavelmente acima de 20 pts quando a semana for completa. Sprint 07 e o gate do v1.0; MRR e wrong_model_rate merecem investigacao antes do tag.
+
 ## Sprint 06 · planning · 2026-11-23
 Goal: API funcional e avaliação completa — eval set expandido, métricas de qualidade de resposta, API HTTP e UI básica.
 Committed: 20 pts (10.3, 10.4, 10.5, 10.6, 9.3, 11.1, 11.2, 12.2)
