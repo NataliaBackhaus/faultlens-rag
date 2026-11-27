@@ -29,7 +29,7 @@ def api_client():
     """TestClient wired to the seed index with a mocked LLM.
 
     Uses yield so the lifespan (app.state setup) stays active for the
-    whole test — TestClient must be used as a context manager for that.
+    whole test - TestClient must be used as a context manager for that.
     """
     seed_qdrant = QdrantClient(path=SEED_PATH)
     mock_llm = MagicMock()
@@ -56,7 +56,7 @@ def test_health_returns_ok(api_client):
 
 
 # ---------------------------------------------------------------------------
-# /ask — resposta normal
+# /ask - resposta normal
 # ---------------------------------------------------------------------------
 
 
@@ -87,7 +87,7 @@ def test_ask_citation_url_has_correct_format(api_client):
 
 
 # ---------------------------------------------------------------------------
-# /ask — abstain
+# /ask - abstain
 # ---------------------------------------------------------------------------
 
 

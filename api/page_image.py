@@ -29,7 +29,7 @@ def annotate_page(doc_id: str, page: int, bbox: list[float]) -> bytes:
     x0, y_top_pdf, x1, y_bottom_pdf = bbox
     h = img.height
 
-    # PDF y-axis is bottom-up; PIL y-axis is top-down — flip.
+    # PDF y-axis is bottom-up; PIL y-axis is top-down - flip.
     x0_px = x0 * SCALE
     y0_px = h - y_top_pdf * SCALE
     x1_px = x1 * SCALE
