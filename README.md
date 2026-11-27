@@ -25,6 +25,26 @@ Measured inference speed (Ollama, GPU via ROCm):
 
 At 75 tokens/s, describing ~500 figures takes roughly 15-20 minutes locally - no Kaggle GPU needed for ingestion.
 
+## Running the service
+
+Prerequisites: Docker (for Qdrant) and Ollama with `qwen2.5:3b` pulled.
+
+```bash
+# 1. Start Qdrant
+docker compose up -d qdrant
+
+# 2. Start the FastAPI service (port 8000)
+PYTHONPATH=. uv run uvicorn api.server:app --port 8000
+
+# 3. Start the Streamlit UI (port 8501, in a second terminal)
+uv run streamlit run ui/app.py
+
+# Export thumbs-down feedback as draft eval questions
+make feedback
+```
+
+The OpenAPI docs are available at http://localhost:8000/docs.
+
 ## Data and copyright
 
 Manufacturer manuals are copyrighted by their respective owners and are not included in this repository. Run `make download` to fetch them locally.
